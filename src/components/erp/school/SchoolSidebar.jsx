@@ -1,0 +1,134 @@
+import { useNavigate, useLocation } from "react-router-dom";
+
+export default function SchoolSidebar(){
+
+const navigate = useNavigate();
+const location = useLocation();
+
+const currentPath = location.pathname;
+
+/* reusable menu styling */
+const getClass = (route) => `
+flex items-center gap-3 px-4 py-3 mx-2 rounded-lg cursor-pointer transition-all duration-200
+
+${currentPath === route
+? "bg-white text-[#0058be] font-semibold shadow-sm"
+: "text-[#424754] hover:bg-[#e5eeff]"}
+`;
+
+
+/* sidebar menu config */
+const menu = [
+
+{
+name:"Dashboard",
+icon:"dashboard",
+path:"/school-admin"
+},
+
+{
+name:"Academic Years",
+icon:"calendar_today",
+path:"/school-admin/academic-years"
+},
+
+{
+name:"Roles & Permissions",
+icon:"security",
+path:"/school-admin/roles"
+},
+
+{
+name:"Students",
+icon:"school",
+path:"/school-admin/students"
+},
+
+{
+name:"Teachers",
+icon:"person_4",
+path:"/school-admin/teachers"
+},
+
+{
+name:"Parents",
+icon:"group",
+path:"/school-admin/parents"
+},
+
+{
+name:"Parent-Student Mapping",
+icon:"diversity_1",
+path:"/school-admin/mapping"
+},
+
+{
+name:"Teacher Assignment",
+icon:"assignment_ind",
+path:"/school-admin/teacher-assignment"
+},
+
+{
+name:"Settings",
+icon:"settings",
+path:"/school-admin/settings"
+}
+
+];
+
+
+return(
+
+<aside className="h-screen w-64 fixed left-0 top-0 bg-[#f3f6ff] flex flex-col py-6 border-r border-[#e5eeff]">
+
+{/* logo */}
+
+<div className="px-6 mb-10">
+
+<h1 className="text-xl font-bold text-[#0058be] tracking-tight">
+
+Academic Architect
+
+</h1>
+
+</div>
+
+
+
+{/* navigation */}
+
+<nav className="space-y-1">
+
+{menu.map((item) => (
+
+<div
+
+key={item.path}
+
+onClick={() => navigate(item.path)}
+
+className={getClass(item.path)}
+
+>
+
+<span className="material-symbols-outlined">
+
+{item.icon}
+
+</span>
+
+{item.name}
+
+</div>
+
+))}
+
+</nav>
+
+
+
+</aside>
+
+);
+
+}
