@@ -39,9 +39,29 @@ import AssignTeacher from "../pages/schoolAdmin/AssignTeacher";
 import SchoolSettings from "../pages/schoolAdmin/Settings";
 import SchoolNotifications from "../pages/schoolAdmin/Notifications";
 
+/* ================= STUDENT ================= */
+import StudentDashboard from "../pages/student/Dashboard";
+import Notifications from "../pages/student/Notifications";
 
-//student 
+import Assignments from "../pages/student/Assignments";
+import Attendance from "../pages/student/Attendance";
+import FeesPayments from "../pages/student/FeesPayments";
+import HelpDesk from "../pages/student/HelpDesk";
 
+import LearningMaterialsHub from "../pages/student/LearningMaterialsHub";
+import LearningMaterialDetailView from "../pages/student/LearningMaterialDetailView";
+
+import PracticeQuizHub from "../pages/student/PracticeQuizHub";
+import ActiveQuiz from "../pages/student/ActiveQuiz";
+import QuizResult from "../pages/student/QuizResult";
+
+import Profile from "../pages/student/Profile";
+import Subjects from "../pages/student/Subjects";
+import Settings from "../pages/student/Settings";
+import Recommendations from "../pages/student/Recommendations";
+
+import AiTutor from "../pages/student/AiTutor";
+import GradesCard from "../pages/student/GradesCard";
 
 //PARENT
 import ParentDashboard from "../pages/parent/ParentDashboard";
@@ -124,7 +144,27 @@ return(
 
 
 {/* ================= STUDENT ================= */}
+<Route path="/student" element={<StudentDashboard />} />
+<Route path="/student/notifications" element={<Notifications />} />
 
+<Route path="/student/assignments" element={<Assignments />} />
+<Route path="/student/attendance" element={<Attendance />} />
+<Route path="/student/fees" element={<FeesPayments />} />
+<Route path="/student/help" element={<HelpDesk />} />
+
+<Route path="/student/materials" element={<LearningMaterialsHub />} />
+<Route path="/student/materials/view" element={<LearningMaterialDetailView />} />
+
+<Route path="/student/quiz" element={<PracticeQuizHub />} />
+<Route path="/student/quiz/active" element={<ActiveQuiz />} />
+<Route path="/student/quiz/result" element={<QuizResult />} />
+
+<Route path="/student/profile" element={<Profile />} />
+<Route path="/student/subjects" element={<Subjects />} />
+<Route path="/student/settings" element={<Settings />} />
+<Route path="/student/recommendations" element={<Recommendations />} />
+<Route path="/student/ai-tutor" element={<AiTutor />} />
+<Route path="/student/grades" element={<GradesCard />} />
 
 
 
