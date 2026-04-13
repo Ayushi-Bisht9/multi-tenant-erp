@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import React from 'react';
+import { BrowserRouter, Routes, Route , Navigate } from "react-router-dom";
 
 /* COMMON */
 import Landing from "../pages/Landing";
@@ -62,6 +63,40 @@ import Recommendations from "../pages/student/Recommendations";
 
 import AiTutor from "../pages/student/AiTutor";
 import GradesCard from "../pages/student/GradesCard";
+
+
+//Teacher
+// TEACHER PAGES
+import MyClassesHub from "../pages/teacher/MyClassesHub";
+import AssignmentListPage from "../pages/teacher/AssignmentListPage";
+import AssignmentDetailPage from "../pages/teacher/AssignmentDetailPage";
+import CreateAssignmentPage from "../pages/teacher/CreateAssignmentPage";
+
+import AttendanceOverview from "../pages/teacher/AttendanceOverview";
+import MarkAttendance from "../pages/teacher/MarkAttendance";
+
+import ClassPerformanceManagement from "../pages/teacher/ClassPerformanceManagement";
+
+import Dashboard from "../pages/teacher/Dashboard";
+
+import CreateExamPage from "../pages/teacher/CreateExamPage";
+import ExamsListPage from "../pages/teacher/ExamsListPage";
+
+import TeacherNotificationsHub from "../pages/teacher/TeacherNotificationsHub";
+
+import EnterStudentGrades from "../pages/teacher/EnterStudentGrades";
+import GradesAssessmentOverview from "../pages/teacher/GradesAssessmentOverview";
+
+import ContentAIToolsDashboard from "../pages/teacher/ContentAIToolsDashboard";
+import AIToolWorkspaceLessonPlan from "../pages/teacher/AIToolWorkspaceLessonPlan";
+
+import StudentAnalyticsOverview from "../pages/teacher/StudentAnalyticsOverview";
+import DetailedStudentAnalytics from "../pages/teacher/DetailedStudentAnalytics";
+
+import TeacherProfileManagement from "../pages/teacher/TeacherProfileManagement";
+import TeacherSystemSettings from "../pages/teacher/TeacherSystemSettings";
+
+
 
 //PARENT
 import ParentDashboard from "../pages/parent/ParentDashboard";
@@ -143,6 +178,7 @@ return(
 
 
 
+
 {/* ================= STUDENT ================= */}
 <Route path="/student" element={<StudentDashboard />} />
 <Route path="/student/notifications" element={<Notifications />} />
@@ -166,16 +202,65 @@ return(
 <Route path="/student/ai-tutor" element={<AiTutor />} />
 <Route path="/student/grades" element={<GradesCard />} />
 
+{/* ================= TEACHER ================= */}
+
+<Route path="/teacher" element={<Navigate to="/teacher/dashboard" />} />
+
+<Route path="/teacher/dashboard" element={<Dashboard />} />
+
+<Route path="/teacher/classes" element={<MyClassesHub />} />
+<Route path="/teacher/classes/:id/performance" element={<ClassPerformanceManagement />} />
+
+<Route path="/teacher/assignments" element={<AssignmentListPage />} />
+<Route path="/teacher/assignments/create" element={<CreateAssignmentPage />} />
+<Route path="/teacher/assignments/:id" element={<AssignmentDetailPage />} />
+
+<Route path="/teacher/attendance" element={<AttendanceOverview />} />
+<Route path="/teacher/attendance/mark" element={<MarkAttendance />} />
+
+<Route path="/teacher/exams" element={<ExamsListPage />} />
+<Route path="/teacher/exams/create" element={<CreateExamPage />} />
+
+<Route path="/teacher/grades" element={<GradesAssessmentOverview />} />
+<Route path="/teacher/grades/enter" element={<EnterStudentGrades />} />
+
+<Route path="/teacher/ai-tools" element={<ContentAIToolsDashboard />} />
+<Route path="/teacher/ai-tools/lesson-plan" element={<AIToolWorkspaceLessonPlan />} />
+
+<Route path="/teacher/analytics" element={<StudentAnalyticsOverview />} />
+<Route path="/teacher/analytics/student/:id" element={<DetailedStudentAnalytics />} />
+
+<Route path="/teacher/profile" element={<TeacherProfileManagement />} />
+<Route path="/teacher/settings" element={<TeacherSystemSettings />} />
+
+<Route path="/teacher/notifications" element={<TeacherNotificationsHub />} />
+
+<Route 
+path="/teacher/analytics/student/:id" 
+element={<DetailedStudentAnalytics />} 
+/>
+        
+
+     
+>>>>>>> Stashed changes
+
 
 
 {/* ================= PARENT ================= */}
 <Route path="/parent" element={<ParentDashboard />} />
+
 <Route path="/parent/child-overview" element={<ChildOverview />} />
+
 <Route path="/parent/attendance" element={<AttendanceTracker />} />
+
 <Route path="/parent/assignments" element={<AssignmentsOverview />} />
+
 <Route path="/parent/grades" element={<GradesAssessmentHub />} />
+
+<Route path="/parent/ai-insights" element={<AllInsightsRecommendations />} />
+
 <Route path="/parent/notifications" element={<NotificationsHub />} />
-<Route path="/parent/insights" element={<AllInsightsRecommendations />} />
+
 <Route path="/parent/settings" element={<ParentPortalSettings />} />
 
 
