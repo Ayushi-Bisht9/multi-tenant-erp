@@ -43,7 +43,15 @@ import SchoolNotifications from "../pages/schoolAdmin/Notifications";
 //student 
 
 
-
+//PARENT
+import ParentDashboard from "../pages/parent/ParentDashboard";
+import ChildOverview from "../pages/parent/ChildOverview";
+import AttendanceTracker from "../pages/parent/AttendanceTracker";
+import AssignmentsOverview from "../pages/parent/AssignmentsOverview";
+import GradesAssessmentHub from "../pages/parent/GradesAssessmentHub";
+import NotificationsHub from "../pages/parent/NotificationsHub";
+import AllInsightsRecommendations from "../pages/parent/AllInsightsRecommendations";
+import ParentPortalSettings from "../pages/parent/ParentPortalSettings";
 
 function AppRoutes(){
 
@@ -113,7 +121,22 @@ return(
 <Route path="/school-admin/teacher-assignment/create" element={<AssignTeacher/>} />
 
 
+
+
 {/* ================= STUDENT ================= */}
+
+
+
+
+{/* ================= PARENT ================= */}
+<Route path="/parent" element={<ParentDashboard />} />
+<Route path="/parent/child-overview" element={<ChildOverview />} />
+<Route path="/parent/attendance" element={<AttendanceTracker />} />
+<Route path="/parent/assignments" element={<AssignmentsOverview />} />
+<Route path="/parent/grades" element={<GradesAssessmentHub />} />
+<Route path="/parent/notifications" element={<NotificationsHub />} />
+<Route path="/parent/insights" element={<AllInsightsRecommendations />} />
+<Route path="/parent/settings" element={<ParentPortalSettings />} />
 
 
 
