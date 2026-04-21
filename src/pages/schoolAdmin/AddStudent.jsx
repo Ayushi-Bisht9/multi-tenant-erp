@@ -1,57 +1,27 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-// Mock layout for preview environment (uncomment your import locally)
-// import SchoolLayout from "../../components/erp/school/SchoolLayout";
-const SchoolLayout = ({ title, children }) => (
-  <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
-    <header className="bg-white shadow-sm px-8 py-4 border-b border-slate-200">
-      <h1 className="text-xl font-bold text-[#0058be]">{title}</h1>
-    </header>
-    <main>{children}</main>
-  </div>
-);
+import SchoolLayout from "../../components/erp/school/SchoolLayout";
 
 export default function AddStudent() {
   const navigate = useNavigate();
 
-  // Core User Model Fields
+  // STEP 1: Core User Model Fields
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   
-  // Role Mapping Field
-  const [selectedRole, setSelectedRole] = useState("");
-  const [availableRoles, setAvailableRoles] = useState([]);
+  // STEP 2: Student Profile Fields
+  const [enrollmentNumber, setEnrollmentNumber] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [bloodGroup, setBloodGroup] = useState("");
+  const [address, setAddress] = useState("");
 
   // UI State
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
-
-  // Fetch available roles from the API so we can map the user
-  useEffect(() => {
-    const fetchRoles = async () => {
-      try {
-        const baseUrl = import.meta.env?.VITE_API_BASE_URL || process.env?.REACT_APP_API_BASE_URL;
-        const token = localStorage.getItem("accessToken");
-        
-        const response = await fetch(`${baseUrl}v1/accounts/roles/`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          // Adjust based on if your API uses pagination
-          setAvailableRoles(data.results || data);
-        }
-      } catch (err) {
-        console.error("Could not fetch roles:", err);
-      }
-    };
-    fetchRoles();
-  }, []);
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -86,7 +56,7 @@ export default function AddStudent() {
       const userData = await userResponse.json();
 
       if (!userResponse.ok) {
-        let errorMsg = "Failed to create user identity.";
+        let errorMsg = "Failed to create core user identity.";
         if (typeof userData === "object") {
           errorMsg = Object.entries(userData)
             .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(" ") : msgs}`)
@@ -96,31 +66,44 @@ export default function AddStudent() {
       }
 
       // ==========================================
-      // STEP 2: ASSIGN THE RBAC ROLE (UserRole Mapping)
+      // STEP 2: CREATE THE STUDENT PROFILE
       // ==========================================
-      if (selectedRole && userData.id) {
-        const rolePayload = {
-          user: userData.id,
-          role: selectedRole
+      if (userData.id) {
+        const profilePayload = {
+          user: userData.id, // Linking the OneToOneField
+          enrollment_number: enrollmentNumber,
+          date_of_birth: dateOfBirth || null, // Handle empty dates safely for Django DateField
+          phone_number: phoneNumber,
+          blood_group: bloodGroup,
+          address: address,
+          is_archived: false
         };
 
-        const roleResponse = await fetch(`${baseUrl}v1/accounts/user-roles/`, {
+        const profileResponse = await fetch(`${baseUrl}v1/profiles/students/`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`
           },
-          body: JSON.stringify(rolePayload)
+          body: JSON.stringify(profilePayload)
         });
 
-        if (!roleResponse.ok) {
-          const roleError = await roleResponse.json();
-          console.error("Role Assignment Error:", roleError);
-          throw new Error("User created, but role assignment failed. You may need to assign it manually.");
+        const profileData = await profileResponse.json();
+
+        if (!profileResponse.ok) {
+          console.error("Profile Creation Error:", profileData);
+          
+          let profileErrorMsg = "Core user was created, but failed to link the Student Profile.";
+          if (typeof profileData === "object") {
+             profileErrorMsg += " " + Object.entries(profileData)
+              .map(([field, msgs]) => `${field}: ${Array.isArray(msgs) ? msgs.join(" ") : msgs}`)
+              .join(" | ");
+          }
+          throw new Error(profileErrorMsg);
         }
       }
 
-      setSuccessMsg("Account identity and role established successfully!");
+      setSuccessMsg("Student registration complete! Identity and profile linked successfully.");
       
       // Delay navigation so they can see the success message
       setTimeout(() => {
@@ -137,17 +120,17 @@ export default function AddStudent() {
   };
 
   return (
-    <SchoolLayout title="User Registration">
+    <SchoolLayout title="Student Registration">
       <div className="max-w-6xl mx-auto space-y-8 px-8 py-10">
         
         {/* breadcrumb */}
         <div className="flex justify-between items-start">
           <div>
             <h1 className="text-3xl font-semibold text-slate-800">
-              Register Core Identity
+              Register New Student
             </h1>
             <p className="text-[#6b7280] mt-1 max-w-2xl text-sm">
-              Create the base `User` account for authentication. This creates the login credentials and links them to an RBAC role inside your multi-tenant Django architecture. Extended profiles (Student, Teacher) can be mapped later.
+              This two-step process automatically creates the authentication identity and links the extended student profile in your database.
             </p>
           </div>
 
@@ -187,14 +170,17 @@ export default function AddStudent() {
             {/* LEFT COLUMN */}
             <div className="lg:col-span-2 space-y-8">
 
-              {/* Basic Info */}
+              {/* CORE IDENTITY (User Model) */}
               <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
-                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-6">
-                   <span className="material-symbols-outlined text-[#0058be]">badge</span>
-                   Identity Information
-                </h3>
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                     <span className="material-symbols-outlined text-[#0058be]">badge</span>
+                     Step 1: Core Identity
+                  </h3>
+                  <span className="text-xs font-mono bg-blue-50 text-[#0058be] px-2 py-1 rounded border border-blue-100">User Model</span>
+                </div>
                 
-                <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid md:grid-cols-2 gap-6 mb-6">
                   <div className="flex flex-col gap-2">
                     <label className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase">
                       First Name
@@ -210,10 +196,9 @@ export default function AddStudent() {
 
                   <div className="flex flex-col gap-2">
                     <label className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase">
-                      Last Name
+                      Last Name (Optional)
                     </label>
                     <input
-                      required
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
                       placeholder="e.g. Alexander"
@@ -221,14 +206,6 @@ export default function AddStudent() {
                     />
                   </div>
                 </div>
-              </div>
-
-              {/* Authentication Credentials */}
-              <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
-                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-6">
-                   <span className="material-symbols-outlined text-[#6b38d4]">lock</span>
-                   Authentication Credentials
-                </h3>
 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="flex flex-col gap-2">
@@ -261,35 +238,90 @@ export default function AddStudent() {
                 </div>
               </div>
 
-              {/* System Mapping (Role) */}
+              {/* STUDENT PROFILE (StudentProfile Model) */}
               <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[#9a4d00]">account_tree</span>
-                    System Access Mapping
+                     <span className="material-symbols-outlined text-[#6b38d4]">assignment_ind</span>
+                     Step 2: Academic Profile
                   </h3>
-                  <span className="text-xs bg-[#e5eeff] text-[#0058be] font-bold px-2 py-1 rounded">RBAC API</span>
+                  <span className="text-xs font-mono bg-purple-50 text-[#6b38d4] px-2 py-1 rounded border border-purple-100">StudentProfile Model</span>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6 mb-6">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase">
+                      Enrollment Number
+                    </label>
+                    <input
+                      required
+                      value={enrollmentNumber}
+                      onChange={(e) => setEnrollmentNumber(e.target.value)}
+                      placeholder="e.g. STU-2024-001"
+                      className="bg-[#eff4ff] px-4 py-3 rounded-md outline-none focus:bg-white focus:border-[#0058be]/40 focus:ring-2 focus:ring-[#0058be]/10 border border-transparent transition-all"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase">
+                      Date of Birth
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={dateOfBirth}
+                      onChange={(e) => setDateOfBirth(e.target.value)}
+                      className="bg-[#eff4ff] px-4 py-3 rounded-md outline-none focus:bg-white focus:border-[#0058be]/40 focus:ring-2 focus:ring-[#0058be]/10 border border-transparent transition-all text-slate-700"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6 mb-6">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase">
+                      Phone Number
+                    </label>
+                    <input
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      placeholder="+1 (555) 000-0000"
+                      className="bg-[#eff4ff] px-4 py-3 rounded-md outline-none focus:bg-white focus:border-[#0058be]/40 focus:ring-2 focus:ring-[#0058be]/10 border border-transparent transition-all"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase">
+                      Blood Group
+                    </label>
+                    <select
+                      value={bloodGroup}
+                      onChange={(e) => setBloodGroup(e.target.value)}
+                      className="bg-[#eff4ff] px-4 py-3 rounded-md outline-none focus:bg-white focus:border-[#0058be]/40 focus:ring-2 focus:ring-[#0058be]/10 border border-transparent transition-all"
+                    >
+                      <option value="">Select Group</option>
+                      <option value="A+">A+</option>
+                      <option value="A-">A-</option>
+                      <option value="B+">B+</option>
+                      <option value="B-">B-</option>
+                      <option value="AB+">AB+</option>
+                      <option value="AB-">AB-</option>
+                      <option value="O+">O+</option>
+                      <option value="O-">O-</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-semibold text-[#6b7280] tracking-wider uppercase">
-                    Assign Institutional Role
+                    Residential Address
                   </label>
-                  <select
-                    value={selectedRole}
-                    onChange={(e) => setSelectedRole(e.target.value)}
-                    className="bg-[#eff4ff] px-4 py-3 rounded-md outline-none focus:bg-white focus:border-[#0058be]/40 focus:ring-2 focus:ring-[#0058be]/10 border border-transparent transition-all font-medium"
-                  >
-                    <option value="">Select a specific role (Optional)</option>
-                    {availableRoles.map(role => (
-                      <option key={role.id} value={role.id}>
-                        {role.name} - {role.description ? role.description.substring(0,40) : "System Role"}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Assigning a role will trigger the `user-roles/` API mapping to securely define this user's viewset limits.
-                  </p>
+                  <textarea
+                    rows="2"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="Enter full address..."
+                    className="bg-[#eff4ff] px-4 py-3 rounded-md outline-none focus:bg-white focus:border-[#0058be]/40 focus:ring-2 focus:ring-[#0058be]/10 border border-transparent transition-all resize-none"
+                  />
                 </div>
               </div>
 
@@ -316,7 +348,7 @@ export default function AddStudent() {
                   ) : (
                     <>
                       <span className="material-symbols-outlined text-sm">save</span>
-                      Initialize User
+                      Complete Registration
                     </>
                   )}
                 </button>
@@ -331,14 +363,16 @@ export default function AddStudent() {
                  <div className="absolute top-0 right-0 p-4 opacity-10">
                    <span className="material-symbols-outlined text-8xl">data_object</span>
                  </div>
-                 <h3 className="text-lg font-bold mb-3 relative z-10 text-blue-200">Database Context</h3>
+                 <h3 className="text-lg font-bold mb-3 relative z-10 text-blue-200">Relational Architecture</h3>
                  <p className="text-sm text-slate-300 relative z-10 leading-relaxed mb-4">
-                   This form targets your generic multi-tenant `User` model. Details like Blood Group, Roll Number, or Class assignment belong in the specific `StudentProfile` model which you'll implement next!
+                   Your Django backend is executing two sequential REST transactions here. It creates the authentication model, then attaches the extended domain attributes via the OneToOne mapping.
                  </p>
-                 <div className="bg-[#1e3450] p-3 rounded-md border border-[#2b4b72] relative z-10">
-                    <p className="text-xs font-mono text-blue-300">
-                       POST /api/v1/users/<br/>
-                       POST /api/v1/accounts/user-roles/
+                 <div className="bg-[#1e3450] p-3 rounded-md border border-[#2b4b72] relative z-10 space-y-1">
+                    <p className="text-xs font-mono text-green-300">
+                       1. POST /api/v1/users/
+                    </p>
+                    <p className="text-xs font-mono text-purple-300">
+                       2. POST /api/v1/profiles/students/
                     </p>
                  </div>
               </div>
@@ -352,7 +386,7 @@ export default function AddStudent() {
                   Profile Asset
                 </h4>
                 <p className="text-xs text-[#6b7280]">
-                  Image upload will be handled at the profile creation step.
+                  You can upload a custom profile picture later from the student's detail view.
                 </p>
               </div>
 
