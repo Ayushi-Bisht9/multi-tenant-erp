@@ -156,6 +156,7 @@ return(
 
 <Route path="/school-admin/academic-years" element={<AcademicYears />} />
 <Route path="/school-admin/academic-years/create" element={<CreateAcademicYear />} />
+<Route path="/school-admin/academic-years/edit/:id" element={<CreateAcademicYear />} />
 
 <Route path="/school-admin/roles" element={<RolesPermissions />} />
 <Route path="/school-admin/roles/create" element={<CreateRole />} />
@@ -239,10 +240,6 @@ return(
 path="/teacher/analytics/student/:id" 
 element={<DetailedStudentAnalytics />} 
 />
-        
-
-     
->>>>>>> Stashed changes
 
 
 
