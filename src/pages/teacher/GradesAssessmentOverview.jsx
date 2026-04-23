@@ -1,15 +1,106 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import MainLayout from "../../components/erp/teacher/MainLayout";
 import Card from "../../components/erp/teacher/Card";
 
-const assessmentsData = [
-  { id: 1, name: 'Calculus Midterm A', date: 'Oct 12, 2023', score: 82, status: 'Completed', icon: 'calculate', color: 'primary', statusColor: 'green' },
-  { id: 2, name: 'Geometry Workshop', date: 'Oct 24, 2023', score: 65, status: 'In Progress', icon: 'square_foot', color: 'purple', statusColor: 'blue' },
-  { id: 3, name: 'Algebra Quiz III', date: 'Nov 05, 2023', score: null, status: 'Pending', icon: 'functions', color: 'amber', statusColor: 'amber' }
-];
+export default function GradesAssessmentOverview() {
+  const [assessmentsData, setAssessmentsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-const GradesAssessmentOverview = () => {
+  useEffect(() => {
+    const fetchAndAggregateGrades = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const baseUrl = import.meta.env?.VITE_API_BASE_URL || process.env?.REACT_APP_API_BASE_URL;
+        const token = localStorage.getItem("accessToken");
+
+        const response = await fetch(`${baseUrl}v1/operations/grades/`, {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Accept": "application/json"
+          }
+        });
+
+        if (!response.ok) throw new Error("Failed to fetch grades data.");
+
+        const data = await response.json();
+        const gradesList = data.results || data;
+
+        // Using your data science concepts! Group the flat grades list by Exam ID to generate the "Assessments" view
+        const examMap = {};
+        
+        gradesList.forEach(grade => {
+          if (!examMap[grade.exam]) {
+            examMap[grade.exam] = {
+              id: grade.exam,
+              name: grade.exam_name || 'System Assessment',
+              subject: grade.subject_name || 'General Subject',
+              totalMarksObtained: 0,
+              totalMaxMarks: 0,
+              gradedStudentsCount: 0,
+              // Determine UI aesthetics dynamically
+              icon: getSubjectIcon(grade.subject_name),
+              color: getSubjectColor(grade.subject_name)
+            };
+          }
+
+          // Aggregate numerical scores if they exist
+          if (grade.marks_obtained && grade.max_marks) {
+            examMap[grade.exam].totalMarksObtained += parseFloat(grade.marks_obtained);
+            examMap[grade.exam].totalMaxMarks += parseFloat(grade.max_marks);
+            examMap[grade.exam].gradedStudentsCount += 1;
+          }
+        });
+
+        // Convert the map to an array and calculate averages
+        const aggregated = Object.values(examMap).map(exam => {
+          let avgScore = null;
+          if (exam.totalMaxMarks > 0) {
+            avgScore = Math.round((exam.totalMarksObtained / exam.totalMaxMarks) * 100);
+          }
+          
+          return {
+            ...exam,
+            score: avgScore,
+            status: exam.gradedStudentsCount > 0 ? 'Completed' : 'Pending',
+            statusColor: exam.gradedStudentsCount > 0 ? 'green' : 'amber',
+            date: 'Recent' // Placeholder since date isn't strictly in the grades schema snippet
+          };
+        });
+
+        setAssessmentsData(aggregated);
+
+      } catch (err) {
+        console.error("Aggregation Error:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAndAggregateGrades();
+  }, []);
+
+  const getSubjectIcon = (subjectName) => {
+    const name = (subjectName || "").toLowerCase();
+    if (name.includes("math") || name.includes("calc")) return "functions";
+    if (name.includes("phys") || name.includes("sci")) return "biotech";
+    if (name.includes("hist")) return "history_edu";
+    return "library_books";
+  };
+
+  const getSubjectColor = (subjectName) => {
+    const name = (subjectName || "").toLowerCase();
+    if (name.includes("math")) return "primary";
+    if (name.includes("phys") || name.includes("sci")) return "purple";
+    return "amber";
+  };
+
+  const totalGradedCount = assessmentsData.reduce((acc, curr) => acc + curr.gradedStudentsCount, 0);
+
   return (
     <MainLayout title="Grades & Assessment">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -25,16 +116,25 @@ const GradesAssessmentOverview = () => {
             <h1 className="text-4xl font-extrabold text-on-surface tracking-tight leading-tight font-display">Grades & Assessment</h1>
           </div>
           <div className="flex flex-wrap gap-3">
-            <button className="px-5 py-2.5 rounded-md bg-surface-container-high text-primary font-semibold text-sm hover:bg-surface-container-highest transition-all flex items-center gap-2 outline-none border-none cursor-pointer shadow-sm">
-              <span className="material-symbols-outlined text-lg">upload_file</span>
-              Export Report
-            </button>
-            <button className="px-5 py-2.5 rounded-md bg-gradient-to-br from-primary to-primary-container text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-2 active:scale-95 outline-none border-none cursor-pointer">
-              <span className="material-symbols-outlined text-lg">publish</span>
-              Publish Results
-            </button>
+            <Link 
+              to="/teacher/grades/enter"
+              className="px-5 py-2.5 rounded-md bg-gradient-to-br from-primary to-primary-container text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-2 active:scale-95 outline-none border-none cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-lg">edit_document</span>
+              Enter New Grades
+            </Link>
           </div>
         </div>
+
+        {error && (
+          <div className="p-4 bg-red-50 text-red-700 rounded-md border border-red-200 flex gap-3 shadow-sm">
+             <span className="material-symbols-outlined">error</span>
+             <div>
+               <p className="font-bold text-sm">API Error</p>
+               <p className="text-sm mt-1">{error}</p>
+             </div>
+          </div>
+        )}
 
         {/* Bento Layout: Insights & Filters */}
         <div className="grid grid-cols-12 gap-6">
@@ -46,8 +146,8 @@ const GradesAssessmentOverview = () => {
                 <span className="material-symbols-outlined text-sm" style={{fontVariationSettings: "'FILL' 1"}}>auto_awesome</span>
                 AI Performance Insight
               </div>
-              <h2 className="text-2xl font-bold font-display leading-snug max-w-md">Average class performance is 12% higher than last semester in Geometry.</h2>
-              <p className="text-white/70 text-sm max-w-sm">The implementation of spatial visualization modules has shown significant correlation with higher test scores in Grade 10-A.</p>
+              <h2 className="text-2xl font-bold font-display leading-snug max-w-md">Average class performance is trending upwards.</h2>
+              <p className="text-white/70 text-sm max-w-sm">The implementation of specific visualization modules has shown significant correlation with higher test scores in recent weeks.</p>
               <button className="text-sm font-bold flex items-center gap-2 hover:gap-3 transition-all outline-none border-none cursor-pointer bg-transparent text-white">
                 View Detailed Analysis
                 <span className="material-symbols-outlined text-lg block">arrow_forward</span>
@@ -69,34 +169,16 @@ const GradesAssessmentOverview = () => {
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Academic Year</label>
-                  <select className="w-full bg-surface-container-low border-none rounded-sm text-xs py-2.5 font-medium focus:ring-primary/20 cursor-pointer outline-none pl-2">
-                    <option>2023-2024</option>
-                    <option>2022-2023</option>
-                  </select>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Class</label>
-                  <select className="w-full bg-surface-container-low border-none rounded-sm text-xs py-2.5 font-medium focus:ring-primary/20 cursor-pointer outline-none pl-2">
-                    <option>Grade 10-A</option>
-                    <option>Grade 10-B</option>
-                    <option>Grade 11-C</option>
-                  </select>
-                </div>
-                <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Subject</label>
                   <select className="w-full bg-surface-container-low border-none rounded-sm text-xs py-2.5 font-medium focus:ring-primary/20 cursor-pointer outline-none pl-2">
-                    <option>Mathematics</option>
-                    <option>Physics</option>
-                    <option>Art History</option>
+                    <option>All Subjects</option>
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Exam Type</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Status</label>
                   <select className="w-full bg-surface-container-low border-none rounded-sm text-xs py-2.5 font-medium focus:ring-primary/20 cursor-pointer outline-none pl-2">
-                    <option>Midterm</option>
-                    <option>Final</option>
-                    <option>Quiz</option>
+                    <option>Completed</option>
+                    <option>Pending</option>
                   </select>
                 </div>
               </div>
@@ -112,106 +194,101 @@ const GradesAssessmentOverview = () => {
           <div className="px-6 py-4 border-b border-surface-container flex justify-between items-center bg-surface-container-lowest">
             <h3 className="text-base font-bold font-display text-on-surface">Recent Assessments</h3>
             <div className="flex gap-4 items-center">
-              <span className="text-xs text-on-surface-variant hidden sm:inline">Showing 5 results for <span className="font-bold">Mathematics</span></span>
               <button className="text-primary hover:bg-primary/5 p-1 rounded transition-colors outline-none cursor-pointer border-none bg-transparent">
                 <span className="material-symbols-outlined text-lg block">more_vert</span>
               </button>
             </div>
           </div>
+          
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[700px]">
               <thead>
                 <tr className="bg-surface-container-low/50">
                   <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Exam Name</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Date</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Subject</th>
                   <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Avg. Class Score</th>
                   <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Grading Status</th>
                   <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-container-low">
-                {assessmentsData.map(assessment => {
-                  let badgeColors, dotColor, action;
-                  if (assessment.statusColor === 'green') {
-                    badgeColors = 'bg-green-100 text-green-700'; dotColor = 'bg-green-500'; action = <button className="text-primary font-bold text-xs hover:underline underline-offset-4 decoration-2 outline-none border-none cursor-pointer bg-transparent">Review</button>;
-                  } else if (assessment.statusColor === 'blue') {
+                {loading ? (
+                  <tr>
+                    <td colSpan="5" className="text-center py-16 text-gray-500">
+                      <span className="material-symbols-outlined animate-spin text-3xl text-primary mb-3">progress_activity</span>
+                      <p>Aggregating assessment data...</p>
+                    </td>
+                  </tr>
+                ) : assessmentsData.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="text-center py-16 text-gray-500">
+                      No grades have been posted yet.
+                    </td>
+                  </tr>
+                ) : (
+                  assessmentsData.map(assessment => {
+                    let badgeColors, dotColor, action;
+                    
+                    if (assessment.statusColor === 'green') {
+                      badgeColors = 'bg-green-100 text-green-700'; 
+                      dotColor = 'bg-green-500'; 
+                      action = <button className="text-primary font-bold text-xs hover:underline underline-offset-4 decoration-2 outline-none border-none cursor-pointer bg-transparent">Review</button>;
+                    } else if (assessment.statusColor === 'amber') {
+                      badgeColors = 'bg-amber-100 text-amber-700'; 
+                      dotColor = 'bg-amber-500'; 
+                      action = (
+                        <Link to="/teacher/grades/enter" className="bg-primary text-white px-4 py-1.5 rounded-md font-bold text-xs shadow-sm active:scale-95 transition-all text-center inline-block">
+                          Enter Grades
+                        </Link>
+                      );
+                    }
+                    
+                    let iconBg, iconColor;
+                    if (assessment.color === 'primary') { iconBg = 'bg-primary/10'; iconColor = 'text-primary'; }
+                    else if (assessment.color === 'purple') { iconBg = 'bg-[#6b38d4]/10'; iconColor = 'text-[#6b38d4]'; }
+                    else { iconBg = 'bg-[#b75b00]/10'; iconColor = 'text-[#b75b00]'; }
 
-badgeColors = 'bg-blue-100 text-blue-700';
-
-dotColor = 'bg-blue-500';
-
-action = (
-
-<Link
-to="/teacher/grades/enter"
-className="bg-primary text-white px-4 py-1.5 rounded-md font-bold text-xs shadow-sm active:scale-95 transition-all text-center"
->
-
-Enter Grades
-
-</Link>
-
-);
-
-}else if (assessment.statusColor === 'amber') {
-                    badgeColors = 'bg-amber-100 text-amber-700'; dotColor = 'bg-amber-500'; action = <button className="text-primary font-bold text-xs hover:underline underline-offset-4 decoration-2 outline-none border-none cursor-pointer bg-transparent">Schedule</button>;
-                  }
-                  
-                  let iconBg, iconColor;
-                  if (assessment.color === 'primary') { iconBg = 'bg-primary/10'; iconColor = 'text-primary'; }
-                  else if (assessment.color === 'purple') { iconBg = 'bg-[#6b38d4]/10'; iconColor = 'text-[#6b38d4]'; }
-                  else if (assessment.color === 'amber') { iconBg = 'bg-[#b75b00]/10'; iconColor = 'text-[#b75b00]'; }
-
-                  return (
-                    <tr key={assessment.id} className="hover:bg-blue-50/30 transition-colors group">
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded ${iconBg} flex items-center justify-center ${iconColor}`}>
-                            <span className="material-symbols-outlined text-base block">{assessment.icon}</span>
-                          </div>
-                          <span className="text-sm font-bold text-on-surface">{assessment.name}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-5 text-sm text-on-surface-variant font-medium whitespace-nowrap">{assessment.date}</td>
-                      <td className="px-6 py-5">
-                        {assessment.score !== null ? (
-                          <div className="flex items-center gap-2">
-                            <div className="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden hidden sm:block">
-                              <div className={`h-full ${iconColor.replace('text', 'bg')}`} style={{width: `${assessment.score}%`}}></div>
+                    return (
+                      <tr key={assessment.id} className="hover:bg-blue-50/30 transition-colors group">
+                        <td className="px-6 py-5">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded ${iconBg} flex items-center justify-center ${iconColor}`}>
+                              <span className="material-symbols-outlined text-base block">{assessment.icon}</span>
                             </div>
-                            <span className="text-sm font-bold text-on-surface">{assessment.score}%</span>
+                            <span className="text-sm font-bold text-on-surface">{assessment.name}</span>
                           </div>
-                        ) : (
-                          <span className="text-xs italic text-slate-400">Not calculated</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-5">
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full ${badgeColors} text-[10px] font-bold uppercase tracking-tight whitespace-nowrap`}>
-                          <span className={`w-1.5 h-1.5 ${dotColor} rounded-full`}></span>
-                          {assessment.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-5 text-right">
-                        {action}
-                      </td>
-                    </tr>
-                  )
-                })}
+                        </td>
+                        <td className="px-6 py-5 text-sm text-on-surface-variant font-medium whitespace-nowrap">{assessment.subject}</td>
+                        <td className="px-6 py-5">
+                          {assessment.score !== null ? (
+                            <div className="flex items-center gap-2">
+                              <div className="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden hidden sm:block">
+                                <div className={`h-full ${iconColor.replace('text', 'bg')}`} style={{width: `${assessment.score}%`}}></div>
+                              </div>
+                              <span className="text-sm font-bold text-on-surface">{assessment.score}%</span>
+                            </div>
+                          ) : (
+                            <span className="text-xs italic text-slate-400">Not calculated</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-5">
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full ${badgeColors} text-[10px] font-bold uppercase tracking-tight whitespace-nowrap`}>
+                            <span className={`w-1.5 h-1.5 ${dotColor} rounded-full`}></span>
+                            {assessment.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-5 text-right">
+                          {action}
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
               </tbody>
             </table>
           </div>
           <div className="px-6 py-4 bg-surface-container-lowest flex flex-col sm:flex-row justify-between items-center gap-4 text-xs font-medium text-slate-500 border-t border-surface-container">
-            <p>Showing 1-3 of 12 assessments</p>
-            <div className="flex gap-2">
-              <button className="w-8 h-8 rounded flex items-center justify-center border border-slate-200 hover:bg-surface-container transition-all outline-none cursor-pointer bg-transparent">
-                <span className="material-symbols-outlined text-base block">chevron_left</span>
-              </button>
-              <button className="w-8 h-8 rounded flex items-center justify-center bg-primary text-white border-none outline-none cursor-pointer">1</button>
-              <button className="w-8 h-8 rounded flex items-center justify-center border border-slate-200 hover:bg-surface-container transition-all outline-none cursor-pointer bg-transparent">2</button>
-              <button className="w-8 h-8 rounded flex items-center justify-center border border-slate-200 hover:bg-surface-container transition-all outline-none cursor-pointer bg-transparent">
-                <span className="material-symbols-outlined text-base block">chevron_right</span>
-              </button>
-            </div>
+            <p>Showing {assessmentsData.length} unique assessments</p>
           </div>
         </section>
 
@@ -219,26 +296,26 @@ Enter Grades
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           <Card className="shadow-sm space-y-3">
             <div className="flex justify-between items-start">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Total Students</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Total Assessments</span>
               <div className="w-8 h-8 rounded-full bg-primary/5 text-primary flex items-center justify-center">
-                <span className="material-symbols-outlined text-lg block">groups</span>
+                <span className="material-symbols-outlined text-lg block">book</span>
               </div>
             </div>
             <div>
-              <p className="text-2xl font-bold font-display text-on-surface">32</p>
-              <p className="text-[10px] text-green-600 font-bold mt-1">+2 from last term</p>
+              <p className="text-2xl font-bold font-display text-on-surface">{assessmentsData.length}</p>
+              <p className="text-[10px] text-green-600 font-bold mt-1">Recorded in Database</p>
             </div>
           </Card>
           <Card className="shadow-sm space-y-3">
             <div className="flex justify-between items-start">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Graded This Week</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Scores Logged</span>
               <div className="w-8 h-8 rounded-full bg-purple-50 text-[#6b38d4] flex items-center justify-center">
                 <span className="material-symbols-outlined text-lg block">task_alt</span>
               </div>
             </div>
             <div>
-              <p className="text-2xl font-bold font-display text-on-surface">156</p>
-              <p className="text-[10px] text-slate-500 font-bold mt-1">Assignments & Quizzes</p>
+              <p className="text-2xl font-bold font-display text-on-surface">{totalGradedCount}</p>
+              <p className="text-[10px] text-slate-500 font-bold mt-1">Individual Grades Posted</p>
             </div>
           </Card>
           <Card className="shadow-sm space-y-3 sm:col-span-2 md:col-span-1">
@@ -259,6 +336,4 @@ Enter Grades
 
     </MainLayout>
   );
-};
-
-export default GradesAssessmentOverview;
+}
