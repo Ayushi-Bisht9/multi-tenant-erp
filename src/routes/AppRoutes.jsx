@@ -107,6 +107,7 @@ import GradesAssessmentHub from "../pages/parent/GradesAssessmentHub";
 import NotificationsHub from "../pages/parent/NotificationsHub";
 import AllInsightsRecommendations from "../pages/parent/AllInsightsRecommendations";
 import ParentPortalSettings from "../pages/parent/ParentPortalSettings";
+import CreateSection from '../pages/schoolAdmin/CreateSection';
 
 function AppRoutes(){
 
@@ -153,9 +154,11 @@ return(
 <Route path="/school-admin/settings" element={<SchoolSettings/>}/>
 
 <Route path="/school-admin/create-class" element={<CreateClass />} />
+<Route path="/school-admin/create-section" element={<CreateSection />} />
 
 <Route path="/school-admin/academic-years" element={<AcademicYears />} />
 <Route path="/school-admin/academic-years/create" element={<CreateAcademicYear />} />
+<Route path="/school-admin/academic-years/edit/:id" element={<CreateAcademicYear />} />
 
 <Route path="/school-admin/roles" element={<RolesPermissions />} />
 <Route path="/school-admin/roles/create" element={<CreateRole />} />
@@ -239,10 +242,6 @@ return(
 path="/teacher/analytics/student/:id" 
 element={<DetailedStudentAnalytics />} 
 />
-        
-
-     
->>>>>>> Stashed changes
 
 
 
